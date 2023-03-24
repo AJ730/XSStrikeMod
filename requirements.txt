@@ -1,4 +1,6 @@
 tld
-fuzzywuzzy
-requests
-selenium
+fuzzywuzzy~=0.18.0
+requests~=2.28.2
+selenium~=4.8.2
+colorlog~=6.7.0
+urllib3~=1.26.15

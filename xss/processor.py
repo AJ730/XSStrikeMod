@@ -1,17 +1,24 @@
 from concurrent.futures import ThreadPoolExecutor
+from logging.config import fileConfig
 from multiprocessing import freeze_support
 import logging
+from time import sleep
+
+from colorlog import ColoredFormatter
+
+from xss.Logger import Logger
 
 
 class Scheduler:
-	def __init__(self, pool_size):
+	def __init__(self, pool_size, logging_level=logging.INFO):
 		self.pool_size = pool_size
+		self.logger = Logger.get_logger(logging_level)
 		freeze_support()
-		self.logger = logging.getLogger(__name__)
 
 	def future_callback_error_logger(self, future):
 		try:
-			future.result()
+			identifier = future.result()
+			self.logger.info('Finished Task' + str(identifier))
 		except Exception:
 			self.logger.critical("An exception was thrown!", exc_info=True)
 
@@ -20,20 +27,26 @@ class Scheduler:
 		future.add_done_callback(self.future_callback_error_logger)
 
 	def run_tasks(self, funcs):
-		self.logger.log(msg='Starting Tasks', level=logging.INFO)
+		self.logger.info('Starting Tasks')
+
 		executor = ThreadPoolExecutor(max_workers=self.pool_size)
-		results = [executor.submit(funcs[i][0], funcs[i][1]) for i in range(len(funcs))]
+
+		results = []
+		for i in range(len(funcs)):
+			self.logger.info("Starting Task" + str(i))
+			results.append(executor.submit(funcs[i][0], funcs[i][1]))
+
 		for future in results:
 			future.add_done_callback(self.future_callback_error_logger)
 
 
 #
 def task(identifier):
-	print(f'Task {identifier} done')
+	return identifier
 
 
 # protect the entry point
 if __name__ == '__main__':
-	p = Scheduler(1)
+	p = Scheduler(2)
 
 	p.run_tasks([(task, 1), (task, 2), (task, 2), (task, 2), (task, 2), (task, 2), (task, 2), (task, 2), (task, 2)])
