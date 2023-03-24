@@ -1,12 +1,9 @@
 from concurrent.futures import ThreadPoolExecutor
-from logging.config import fileConfig
 from multiprocessing import freeze_support
 import logging
-from time import sleep
 
-from colorlog import ColoredFormatter
 
-from xss.Logger import Logger
+from xss.logger.Logger import Logger
 
 
 class Scheduler:
