@@ -6,7 +6,7 @@ from core.colors import end, red, white, bad, info
 
 # Just a fancy ass banner
 print('''%s
-\tXSStrike %sv3.1.5
+\tXSStrike %sv4.0.0
 %s''' % (red, white, end))
 
 try:
@@ -39,6 +39,7 @@ import core.log
 # Processing command line arguments, where dest var names will be mapped to local vars with the same name
 parser = argparse.ArgumentParser()
 parser.add_argument('-u', '--url', help='url', dest='target')
+parser.add_argument('-ul', '--url_list', help='path to a file of URLs', dest='targets')
 parser.add_argument('--data', help='post data', dest='paramData')
 parser.add_argument('-e', '--encode', help='encode payloads', dest='encode')
 parser.add_argument('--fuzzer', help='fuzzer',
@@ -71,7 +72,7 @@ parser.add_argument('--skip', help='don\'t ask to continue',
                     dest='skip', action='store_true')
 parser.add_argument('--skip-dom', help='skip dom checking',
                     dest='skipDOM', action='store_true')
-parser.add_argument('--blind', help='inject blind XSS payload while crawling',
+parser.add_argument('--blind', help='inject blind XSS payload while crawling (set the payload/s in core/config.py)',
                     dest='blindXSS', action='store_true')
 parser.add_argument('--console-log-level', help='Console logging level',
                     dest='console_log_level', default=core.log.console_log_level,
@@ -80,11 +81,15 @@ parser.add_argument('--file-log-level', help='File logging level', dest='file_lo
                     choices=core.log.log_config.keys(), default=None)
 parser.add_argument('--log-file', help='Name of the file to log', dest='log_file',
                     default=core.log.log_file)
+parser.add_argument('--js', '--javascript', help='render javascript', dest='js', action='store_true')
+parser.add_argument('--save-payloads', dest="payloads_file", help='Save generated payloads to a file')
 args = parser.parse_args()
 
 # Pull all parameter values of dict from argparse namespace into local variables of name == key
 # The following works, but the static checkers are too static ;-) locals().update(vars(args))
 target = args.target
+targets = args.targets
+js = args.js
 path = args.path
 jsonData = args.jsonData
 paramData = args.paramData
@@ -103,6 +108,7 @@ delay = args.delay
 skip = args.skip
 skipDOM = args.skipDOM
 blindXSS = args.blindXSS
+payloads_file = args.payloads_file
 core.log.console_log_level = args.console_log_level
 core.log.file_log_level = args.file_log_level
 core.log.log_file = args.log_file
@@ -142,6 +148,12 @@ elif jsonData:
     headers['Content-type'] = 'application/json'
     paramData = converter(paramData)
 
+target_list = []
+if targets:
+    target_list = list(filter(None, reader(targets)))
+elif target:
+    target_list.append(target)
+
 if args_file:
     if args_file == 'default':
         payloadList = core.config.payloads
@@ -161,17 +173,32 @@ if update:  # if the user has supplied --update argument
     updater()
     quit()  # quitting because files have been changed
 
-if not target and not args_seeds:  # if the user hasn't supplied a url
+if not target_list and not args_seeds:  # if the user hasn't supplied a url
     logger.no_format('\n' + parser.format_help().lower())
     quit()
 
 if fuzz:
     singleFuzz(target, paramData, encoding, headers, delay, timeout)
 elif not recursive and not args_seeds:
-    if args_file:
-        bruteforcer(target, paramData, payloadList, encoding, headers, delay, timeout)
-    else:
-        scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip)
+
+    results = []
+    for i, target in enumerate(target_list):
+        logger.red_line()
+        logger.info(f'Target: {target}  ({i + 1}/{len(target_list)})')
+        if args_file:
+            bruteforcer(target, paramData, payloadList, encoding, headers, delay, timeout)
+        else:
+            result = scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip, payloads_file)
+            results.append(result) if result else 'The target is not vulnerable!'
+
+    if results:
+        logger.yellow_summary_line()
+        logger.run('SUMMARY')
+        logger.info(f'Total        {len(target_list)} target{"s"[:len(target_list)^1]}')
+        logger.info(f'Vulnerable   {len(results)} target{"s"[:len(results)^1]}')
+        for i, result in enumerate(results):
+            logger.good(f'Pwned        {result[0]} ({result[1]})')
+
 else:
     if target:
         seedList.append(target)

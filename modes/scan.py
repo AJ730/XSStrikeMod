@@ -18,7 +18,15 @@ from core.log import setup_logger
 logger = setup_logger(__name__)
 
 
-def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip):
+def write_vectors(vectors, filename):
+    with open(filename, 'w') as f:
+        for vs in vectors.values():
+            for v in vs:
+                f.write("{}\n".format(v))
+    logger.info('Written payloads to file')
+
+
+def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip, payloads_file, find=""):
     GET, POST = (False, True) if paramData else (True, False)
     # If the user hasn't supplied the root url with http(s), we will handle it
     if not target.startswith('http'):
@@ -31,19 +39,10 @@ def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip):
     logger.debug('Scan target: {}'.format(target))
     response = requester(target, {}, headers, GET, delay, timeout).text
 
-    if not skipDOM:
-        logger.run('Checking for DOM vulnerabilities')
-        highlighted = dom(response)
-        if highlighted:
-            logger.good('Potentially vulnerable objects found')
-            logger.red_line(level='good')
-            for line in highlighted:
-                logger.no_format(line, level='good')
-            logger.red_line(level='good')
     host = urlparse(target).netloc  # Extracts host out of the url
     logger.debug('Host to scan: {}'.format(host))
     url = getUrl(target, GET)
-    logger.debug('Url to scan: {}'.format(url))
+    logger.debug('URL to scan: {}'.format(url))
     params = getParams(target, paramData, GET)
     logger.debug_json('Scan parameters:', params)
     if not params:
@@ -55,6 +54,15 @@ def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip):
         logger.error('WAF detected: %s%s%s' % (green, WAF, end))
     else:
         logger.good('WAF Status: %sOffline%s' % (green, end))
+    if not skipDOM:
+        logger.run('Checking for DOM vulnerabilities')
+        highlighted = dom(response, params)
+        if highlighted:
+            logger.good('Potentially vulnerable objects found')
+            logger.red_line(level='good')
+            for line in highlighted:
+                logger.no_format(line, level='good')
+            logger.red_line(level='good')
 
     for paramName in params.keys():
         paramsCopy = copy.deepcopy(params)
@@ -86,6 +94,9 @@ def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip):
             logger.error('No vectors were crafted.')
             continue
         logger.info('Payloads generated: %i' % total)
+        logger.debug(f'payload_file: {payloads_file}')
+        if payloads_file:
+            write_vectors(vectors, payloads_file)
         progress = 0
         for confidence, vects in vectors.items():
             for vect in vects:
@@ -110,8 +121,8 @@ def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip):
                     if not skip:
                         choice = input(
                             '%s Would you like to continue scanning? [y/N] ' % que).lower()
-                        if choice != 'y':
-                            quit()
+                    if skip or choice != 'y':
+                        return target, loggerVector                       
                 elif bestEfficiency > minEfficiency:
                     logger.red_line()
                     logger.good('Payload: %s' % loggerVector)
