@@ -10,7 +10,7 @@ from selenium.webdriver.chrome.options import Options
 
 class ChromeSimulator(PayloadInjecter):
 
-	def __init__(self, d='/home/kali/WebstormProjects/XSStrike/xss/browser_simulator/chrome_simulator/chromedriver'):
+	def __init__(self, d="/home/kali/Documents/xss/xss/browser_simulator/chrome_simulator/chromedriver"):
 		chrome_options = Options()
 		chrome_options.add_argument("ignore-certificate-error")
 		chrome_options.add_argument("ignore-ssl-errors")
