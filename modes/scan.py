@@ -1,7 +1,7 @@
 import copy
-import re
+import sys
 from urllib.parse import urlparse, quote, unquote
-
+from pywebcopy import save_webpage
 from core.checker import checker
 from core.colors import end, green, que
 import core.config
@@ -11,9 +11,10 @@ from core.filterChecker import filterChecker
 from core.generator import generator
 from core.htmlParser import htmlParser
 from core.requester import requester
-from core.utils import getUrl, getParams, getVar
+from core.utils import getUrl, getParams, getVar, writer
 from core.wafDetector import wafDetector
 from core.log import setup_logger
+from xss.browser_simulator.chrome_simulator.chrome_sim import ChromeSimulator
 
 logger = setup_logger(__name__)
 
@@ -29,6 +30,11 @@ def write_vectors(vectors, filename):
 def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip, payloads_file, find=""):
     GET, POST = (False, True) if paramData else (True, False)
     # If the user hasn't supplied the root url with http(s), we will handle it
+
+    chrome = ChromeSimulator()
+    save_webpage(url = target, project_folder='./target', threaded=True)
+
+
     if not target.startswith('http'):
         try:
             response = requester('https://' + target, {},
@@ -38,7 +44,6 @@ def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip, pa
             target = 'http://' + target
     logger.debug('Scan target: {}'.format(target))
     response = requester(target, {}, headers, GET, delay, timeout).text
-
     host = urlparse(target).netloc  # Extracts host out of the url
     logger.debug('Host to scan: {}'.format(host))
     url = getUrl(target, GET)
@@ -98,6 +103,7 @@ def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip, pa
         if payloads_file:
             write_vectors(vectors, payloads_file)
         progress = 0
+
         for confidence, vects in vectors.items():
             for vect in vects:
                 if core.config.globalVariables['path']:
@@ -107,25 +113,34 @@ def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip, pa
                 logger.run('Progress: %i/%i\r' % (progress, total))
                 if not GET:
                     vect = unquote(vect)
+
                 efficiencies = checker(
                     url, paramsCopy, headers, GET, delay, vect, positions, timeout, encoding)
                 if not efficiencies:
                     for i in range(len(occurences)):
                         efficiencies.append(0)
                 bestEfficiency = max(efficiencies)
+
+                queryParam = next(iter(paramsCopy))
+                # payload = f"{url}?{queryParam}={vect}"
+                payload_sim = f"?queryParam={vect}"
+
                 if bestEfficiency == 100 or (vect[0] == '\\' and bestEfficiency >= 95):
-                    logger.red_line()
-                    logger.good('Payload: %s' % loggerVector)
-                    logger.info('Efficiency: %i' % bestEfficiency)
-                    logger.info('Confidence: %i' % confidence)
-                    if not skip:
-                        choice = input(
-                            '%s Would you like to continue scanning? [y/N] ' % que).lower()
-                    if skip or choice != 'y':
-                        return target, loggerVector                       
+
+                    logVector(chrome, payload_sim, loggerVector, bestEfficiency, confidence)
+                    if skip:
+                        return target, loggerVector
                 elif bestEfficiency > minEfficiency:
-                    logger.red_line()
-                    logger.good('Payload: %s' % loggerVector)
-                    logger.info('Efficiency: %i' % bestEfficiency)
-                    logger.info('Confidence: %i' % confidence)
+                    logVector(chrome, payload_sim, loggerVector, bestEfficiency, confidence)
         logger.no_format('')
+
+    chrome.kill_chrome()
+
+def logVector(chrome, payload, loggerVector, bestEfficiency, confidence):
+    url = 'file://' + sys.path[0] + '/current.html'+payload
+    popup = chrome.validate_get_attack(url)
+    if popup:
+        logger.red_line()
+        logger.good('Payload: %s' % loggerVector)
+        logger.info('Efficiency: %i' % bestEfficiency)
+        logger.info('Confidence: %i' % confidence)

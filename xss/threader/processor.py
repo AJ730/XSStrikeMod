@@ -20,10 +20,30 @@ class Scheduler:
 			self.logger.critical("An exception was thrown!", exc_info=True)
 
 	def submit_task(self, executor, func, *args, **kwargs):
+		"""
+		Submit a new task to the executor
+		@param executor: executor
+		@type executor: executor
+		@param func: func
+		@type func: func
+		@param args: args
+		@type args: args
+		@param kwargs: kwargs
+		@type kwargs: kwargs
+		@return: rask
+		@rtype:
+		"""
 		future = executor.submit(func, *args, **kwargs)
 		future.add_done_callback(self.future_callback_error_logger)
 
 	def run_tasks(self, funcs):
+		"""
+		run all tasks
+		@param funcs: funcs
+		@type funcs: funcs
+		@return: tasks
+		@rtype: tasks
+		"""
 		self.logger.info('Starting Tasks')
 
 		executor = ThreadPoolExecutor(max_workers=self.pool_size)
@@ -38,7 +58,14 @@ class Scheduler:
 
 
 #
-def task(identifier):
+def task(identifier, *args):
+	"""
+	All tasks must have an identifier
+	@param identifier: id
+	@type identifier: id
+	@return: id
+	@rtype: anyType
+	"""
 	return identifier
 
 
