@@ -2,9 +2,11 @@ from abc import ABC, abstractmethod, ABCMeta
 from time import sleep
 
 from selenium.common import UnexpectedAlertPresentException, TimeoutException
+
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
+from selenium import webdriver
 
 
 class PayloadInjecter(ABC):
@@ -77,6 +79,49 @@ class PayloadInjecter(ABC):
 		except UnexpectedAlertPresentException:
 			return True
 
+	def hover_on_all_reflections(self):
+		"""
+		Some of our payloads need to hover
+		@return:
+		@rtype:
+		"""
+		self_injected_d3v_tags = self.driver.find_elements(By.TAG_NAME, 'd3v')
+		list_links_made = self.driver.find_elements(By.TAG_NAME, 'a')
+		self_injected_details_tags = self.driver.find_elements(By.TAG_NAME, 'details')
+		action = webdriver.common.action_chains.ActionChains(self.driver)
+
+		"""
+		Navigate to 
+		"""
+
+
+		for i in self_injected_d3v_tags:
+			try:
+				action.move_to_element_with_offset(i, 5, 5)
+				action.perform()
+				sleep(1)
+			except:
+				continue
+
+		for i in list_links_made:
+			try:
+				action.move_to_element_with_offset(i, 5, 5)
+				action.perform()
+				sleep(1)
+			except:
+				continue
+
+		for i in self_injected_details_tags:
+			try:
+				action.move_to_element_with_offset(i, 5, 5)
+				action.click()
+				action.perform()
+				sleep(1)
+			except:
+				continue
+
+
+
 	def exists(self, element):
 		"""
 		Checks if an element exists in webpage
@@ -85,7 +130,7 @@ class PayloadInjecter(ABC):
 		"""
 
 		try:
-			self.driver.find_element(By.NAME, element).is_displayed()
+			self.driver.find_element(By.XPATH, element).is_displayed()
 			return True
 		except:
 			return False
@@ -97,12 +142,12 @@ class PayloadInjecter(ABC):
         @rtype: true or false
         """
 		try:
-			WebDriverWait(self.driver, 2).until(EC.alert_is_present())
+			self.hover_on_all_reflections()
+			WebDriverWait(self.driver, 4).until(EC.alert_is_present())
 			sleep(2)  # Uncomment this on production code (I just want to see whether alert is present
 			alert = self.driver.switch_to.alert
 			alert.accept()
 			return True
 
 		except TimeoutException:
-			if self.exists("deTails"): return True
 			return False

@@ -16,6 +16,11 @@ from core.wafDetector import wafDetector
 from core.log import setup_logger
 from xss.browser_simulator.chrome_simulator.chrome_sim import ChromeSimulator
 
+import os, sys, re
+import requests
+from urllib.parse import urljoin
+from bs4 import BeautifulSoup
+
 logger = setup_logger(__name__)
 
 
@@ -32,7 +37,6 @@ def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip, pa
     # If the user hasn't supplied the root url with http(s), we will handle it
 
     chrome = ChromeSimulator()
-    save_webpage(url = target, project_folder='./target', threaded=True)
 
 
     if not target.startswith('http'):
@@ -50,6 +54,7 @@ def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip, pa
     logger.debug('URL to scan: {}'.format(url))
     params = getParams(target, paramData, GET)
     logger.debug_json('Scan parameters:', params)
+
     if not params:
         logger.error('No parameters to test.')
         quit()
@@ -122,23 +127,23 @@ def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip, pa
                 bestEfficiency = max(efficiencies)
 
                 queryParam = next(iter(paramsCopy))
-                # payload = f"{url}?{queryParam}={vect}"
-                payload_sim = f"?queryParam={vect}"
+
+                payload = f"{url}?{queryParam}={vect}"
+
 
                 if bestEfficiency == 100 or (vect[0] == '\\' and bestEfficiency >= 95):
 
-                    logVector(chrome, payload_sim, loggerVector, bestEfficiency, confidence)
+                    logVector(chrome, payload, loggerVector, bestEfficiency, confidence)
                     if skip:
                         return target, loggerVector
                 elif bestEfficiency > minEfficiency:
-                    logVector(chrome, payload_sim, loggerVector, bestEfficiency, confidence)
+                    logVector(chrome, payload, loggerVector, bestEfficiency, confidence)
         logger.no_format('')
 
     chrome.kill_chrome()
 
 def logVector(chrome, payload, loggerVector, bestEfficiency, confidence):
-    url = 'file://' + sys.path[0] + '/current.html'+payload
-    popup = chrome.validate_get_attack(url)
+    popup = chrome.validate_get_attack(payload)
     if popup:
         logger.red_line()
         logger.good('Payload: %s' % loggerVector)

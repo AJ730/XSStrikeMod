@@ -274,3 +274,4 @@ def escaped(position, string):
             return True
     else:
         return False
+
