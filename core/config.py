@@ -15,8 +15,8 @@ proxies = {'http': 'http://0.0.0.0:8080', 'https': 'http://0.0.0.0:8080'}
 
 minEfficiency = 90  # payloads below this efficiency will not be displayed
 
-delay = 0  # default delay between http requests
-threadCount = 10  # default number of threads
+delay = 1  # default delay between http requests
+threadCount = 3  # default number of threads
 timeout = 10  # default number of http request timeout
 
 # attributes that have special properties
