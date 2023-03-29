@@ -34,6 +34,7 @@ def crawl(scheme, host, main_url, form, blindXSS, blindPayload, headers, delay, 
     if form:
         for each in form.values():
             url = each['action']
+            correct_url = url
             if url:
                 if url.startswith(main_url):
                     pass
@@ -69,8 +70,8 @@ def crawl(scheme, host, main_url, form, blindXSS, blindPayload, headers, delay, 
                                 for confidence, vects in vectors.items():
                                     try:
                                         vector = list(vects)[0]
-                                        payload = f"{main_url}?{paramName}={vector}"
-                                        logVector(chrome, payload, vector, url, paramName, vector)
+                                        payload = f"{correct_url}?{paramName}={vector}"
+                                        logVector(chrome, payload, vector, correct_url, paramName, vector)
                                         break
                                     except IndexError:
                                         pass

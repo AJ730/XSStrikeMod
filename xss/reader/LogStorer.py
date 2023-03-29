@@ -14,13 +14,20 @@ class LogStorer:
                     unknown_response TEXT,
                     blocked TEXT
             )""")
+        self.conn.commit()
+        self.conn.close()
 
 
     def addVector(self, createsPopup, url, paramName, vector, wholeUrl):
-        dict_vuln = (url, paramName, vector, str(createsPopup), "", "", "" )
-        self.c.execute("INSERT INTO vulnerability VALUES (?, ?, ?, ?, ?, ?, ?)", dict_vuln)
-        self.conn.commit()
+        conn = sqlite3.connect("vuln.db")
+        c = conn.cursor()
+        if createsPopup is None:
+            createsPopup = False
 
+        dict_vuln = (str(url), str(paramName), str(vector), str(createsPopup), "", "", "" )
+        c.execute("INSERT INTO vulnerability VALUES (?, ?, ?, ?, ?, ?, ?)", dict_vuln)
+        conn.commit()
+        conn.close()
 
 
 
