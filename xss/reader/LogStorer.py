@@ -19,6 +19,7 @@ class LogStorer:
     def addVector(self, createsPopup, url, paramName, vector, wholeUrl):
         dict_vuln = (url, paramName, vector, str(createsPopup), "", "", "" )
         self.c.execute("INSERT INTO vulnerability VALUES (?, ?, ?, ?, ?, ?, ?)", dict_vuln)
+        self.conn.commit()
 
 
 
