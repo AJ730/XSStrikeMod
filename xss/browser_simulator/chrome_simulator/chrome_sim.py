@@ -18,7 +18,7 @@ class ChromeSimulator(PayloadInjecter):
 		chrome_options = Options()
 		chrome_options.add_argument("ignore-certificate-error")
 		chrome_options.add_argument("ignore-ssl-errors")
-		chrome_options.headless = headless
+		chrome_options.headless = True
 
 
 		caps = webdriver.DesiredCapabilities().CHROME

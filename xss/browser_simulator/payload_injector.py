@@ -76,6 +76,25 @@ class PayloadInjecter(ABC):
 			pop_up = self.wait_for_alert()
 			if pop_up:
 				return True
+
+			js = '''
+			let callback = arguments[0];
+			let xhr = new XMLHttpRequest();
+			xhr.open('GET', 'https://stackoverflow.com/', true);
+			xhr.onload = function () {
+			    if (this.readyState === 4) {
+			        callback(this.status);
+			    }
+			};
+			xhr.onerror = function () {
+			    callback('error');
+			};
+			xhr.send(null);
+			'''
+
+			status_code = self.driver.execute_async_script(js)
+			print(status_code)
+
 		except UnexpectedAlertPresentException:
 			return True
 
