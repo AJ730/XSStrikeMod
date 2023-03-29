@@ -21,7 +21,10 @@ import requests
 from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
+from xss.reader.LogStorer import LogStorer
+
 logger = setup_logger(__name__)
+logStorer = LogStorer()
 
 
 def write_vectors(vectors, filename):
@@ -37,7 +40,6 @@ def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip, pa
     # If the user hasn't supplied the root url with http(s), we will handle it
 
     chrome = ChromeSimulator()
-
 
     if not target.startswith('http'):
         try:
@@ -130,22 +132,23 @@ def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip, pa
 
                 payload = f"{url}?{queryParam}={vect}"
 
-
                 if bestEfficiency == 100 or (vect[0] == '\\' and bestEfficiency >= 95):
 
-                    logVector(chrome, payload, loggerVector, bestEfficiency, confidence)
+                    logVector(chrome, payload, loggerVector, bestEfficiency, confidence, url, queryParam, vect)
                     if skip:
                         return target, loggerVector
                 elif bestEfficiency > minEfficiency:
-                    logVector(chrome, payload, loggerVector, bestEfficiency, confidence)
+                    logVector(chrome, payload, loggerVector, bestEfficiency, confidence, url, queryParam, vect)
         logger.no_format('')
 
     chrome.kill_chrome()
 
-def logVector(chrome, payload, loggerVector, bestEfficiency, confidence):
+
+def logVector(chrome, payload, loggerVector, bestEfficiency, confidence, url, paramName, vector):
     popup = chrome.validate_get_attack(payload)
     if popup:
         logger.red_line()
         logger.good('Payload: %s' % loggerVector)
         logger.info('Efficiency: %i' % bestEfficiency)
         logger.info('Confidence: %i' % confidence)
+    logStorer.addVector(popup, url, paramName, vector, payload)
