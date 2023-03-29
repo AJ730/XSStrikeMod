@@ -162,7 +162,7 @@ class PayloadInjecter(ABC):
         """
 		try:
 			self.hover_on_all_reflections()
-			WebDriverWait(self.driver, 4).until(EC.alert_is_present())
+			WebDriverWait(self.driver, 2).until(EC.alert_is_present())
 			sleep(2)  # Uncomment this on production code (I just want to see whether alert is present
 			alert = self.driver.switch_to.alert
 			alert.accept()
