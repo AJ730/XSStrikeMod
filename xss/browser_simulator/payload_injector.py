@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod, ABCMeta
 from time import sleep
 
+import requests
 from selenium.common import UnexpectedAlertPresentException, TimeoutException
 
 from selenium.webdriver.common.by import By
@@ -63,6 +64,15 @@ class PayloadInjecter(ABC):
         """
 		self.driver.get(query)
 
+	def checkBlocked(self, query):
+		status = requests.get(query)
+
+		if status.status_code == 403 or status.status_code == 405:
+			return "Blocked"
+
+		if str(status.status_code).startswith("5"):
+			return "Server Error"
+
 	def validate_get_attack(self, query):
 		"""
         Validates if attack succeeded
@@ -72,12 +82,20 @@ class PayloadInjecter(ABC):
         @rtype: boolean
         """
 		try:
+
+			self.checkBlocked(query)
+
 			self.submit_payload_by_query(query)
 			pop_up = self.wait_for_alert()
 			if pop_up:
-				return True
+				return "Succeeded"
+
+			self.checkBlocked(query)
+
+			return "No Change"
+
 		except UnexpectedAlertPresentException:
-			return True
+			return "Unknown Response"
 
 	def hover_on_all_reflections(self):
 		"""
@@ -94,12 +112,14 @@ class PayloadInjecter(ABC):
 		Navigate to 
 		"""
 
-
 		for i in self_injected_d3v_tags:
 			try:
 				action.move_to_element_with_offset(i, 5, 5)
 				action.perform()
-				sleep(1)
+
+				if EC.alert_is_present():
+					return True
+
 			except:
 				continue
 
@@ -107,7 +127,10 @@ class PayloadInjecter(ABC):
 			try:
 				action.move_to_element_with_offset(i, 5, 5)
 				action.perform()
-				sleep(1)
+
+				if EC.alert_is_present():
+					return True
+
 			except:
 				continue
 
@@ -116,11 +139,12 @@ class PayloadInjecter(ABC):
 				action.move_to_element_with_offset(i, 5, 5)
 				action.click()
 				action.perform()
-				sleep(1)
+
+				if EC.alert_is_present():
+					return True
+
 			except:
 				continue
-
-
 
 	def exists(self, element):
 		"""
@@ -141,13 +165,10 @@ class PayloadInjecter(ABC):
         @return: boolean
         @rtype: true or false
         """
+
 		try:
-			self.hover_on_all_reflections()
-			WebDriverWait(self.driver, 4).until(EC.alert_is_present())
-			sleep(2)  # Uncomment this on production code (I just want to see whether alert is present
-			alert = self.driver.switch_to.alert
-			alert.accept()
-			return True
+			if self.hover_on_all_reflections():
+				return True
 
 		except TimeoutException:
 			return False

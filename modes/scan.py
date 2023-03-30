@@ -134,21 +134,21 @@ def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip, pa
 
                 if bestEfficiency == 100 or (vect[0] == '\\' and bestEfficiency >= 95):
 
-                    logVector(chrome, payload, loggerVector, bestEfficiency, confidence, url, queryParam, vect)
+                    logVector(chrome, payload, loggerVector, bestEfficiency, confidence, url, queryParam, vect, WAF)
                     if skip:
                         return target, loggerVector
                 elif bestEfficiency > minEfficiency:
-                    logVector(chrome, payload, loggerVector, bestEfficiency, confidence, url, queryParam, vect)
+                    logVector(chrome, payload, loggerVector, bestEfficiency, confidence, url, queryParam, vect, WAF)
         logger.no_format('')
 
     chrome.kill_chrome()
 
 
-def logVector(chrome, payload, loggerVector, bestEfficiency, confidence, url, paramName, vector):
+def logVector(chrome, payload, loggerVector, bestEfficiency, confidence, url, paramName, vector, WAF):
     popup = chrome.validate_get_attack(payload)
-    if popup:
+    if popup == "Succeeded":
         logger.red_line()
         logger.good('Payload: %s' % loggerVector)
         logger.info('Efficiency: %i' % bestEfficiency)
         logger.info('Confidence: %i' % confidence)
-    logStorer.addVector(popup, url, paramName, vector, payload)
+    logStorer.addVector(popup, url, paramName, vector, payload, WAF)

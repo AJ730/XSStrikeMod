@@ -11,26 +11,17 @@ from core.generator import generator
 from core.htmlParser import htmlParser
 from core.requester import requester
 from core.log import setup_logger
-from xss.browser_simulator.chrome_simulator.chrome_sim import ChromeSimulator
+from core.wafDetector import wafDetector
+from xss.browser_simulator.chrome_simulator.chrome_sim import *
 from xss.reader.LogStorer import LogStorer
 
 logger = setup_logger(__name__)
 
 logStorer = LogStorer()
 
-def logVector(chrome, payload, loggerVector, url, paramName, vector):
-    popup = chrome.validate_get_attack(payload)
-    if popup:
-        logger.red_line()
-        logger.good('Payload: %s' % loggerVector)
-
-    print(popup)
-    logStorer.addVector(popup, url, paramName, vector, payload)
-
 
 def crawl(scheme, host, main_url, form, blindXSS, blindPayload, headers, delay, timeout, encoding):
     chrome = ChromeSimulator()
-
     if form:
         for each in form.values():
             url = each['action']
@@ -65,20 +56,33 @@ def crawl(scheme, host, main_url, form, blindXSS, blindPayload, headers, delay, 
                                 url, paramsCopy, headers, GET, delay, occurences, timeout, encoding)
                             vectors = generator(occurences, response.text)
 
+                            WAF = wafDetector(
+                                url, {list(paramName)[0]: xsschecker}, headers, GET, delay, timeout)
 
                             if vectors:
                                 for confidence, vects in vectors.items():
                                     try:
                                         vector = list(vects)[0]
                                         payload = f"{correct_url}?{paramName}={vector}"
-                                        logVector(chrome, payload, vector, correct_url, paramName, vector)
+                                        logVector(chrome, payload, vector, correct_url, paramName, vector, WAF)
                                         break
                                     except IndexError:
                                         pass
+
 
 
                             # if blindXSS and blindPayload:
                             #     paramsCopy[paramName] = blindPayload
                             #     requester(url, paramsCopy, headers,
                             #               GET, delay, timeout)
+
+def logVector(chrome, payload, loggerVector, url, paramName, vector, WAF):
+    popup = chrome.validate_get_attack(payload)
+
+    if popup == "Succeeded":
+        logger.red_line()
+        logger.good('Payload: %s' % loggerVector)
+
+
+    logStorer.addVector(popup, url, paramName, vector, payload, WAF)
 
