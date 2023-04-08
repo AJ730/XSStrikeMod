@@ -23,6 +23,8 @@ def photon(seedUrl, headers, level, threadCount, delay, timeout, enableDom, pars
 	main_url = schema + '://' + host  # join scheme and host to make the root url
 	storage.add(seedUrl)  # add the url to storage
 	checkedDOMs = []
+	global crawl_count
+	crawl_count = 0
 
 	@SetTimeoutDecorator(timeout=parse_timeout)
 	def rec(target):
@@ -33,6 +35,8 @@ def photon(seedUrl, headers, level, threadCount, delay, timeout, enableDom, pars
 		else:
 			printableTarget = (printableTarget + (' ' * (40 - len(printableTarget))))
 		logger.run('Parsing %s\r' % printableTarget)
+		global crawl_count
+		crawl_count += 1
 		url = getUrl(target, True)
 		params = getParams(target, '', True)
 		if '=' in target:  # if there's a = in the url, there should be GET parameters
@@ -85,5 +89,5 @@ def photon(seedUrl, headers, level, threadCount, delay, timeout, enableDom, pars
 				pass
 
 	except KeyboardInterrupt:
-		return [forms, processed]
-	return [forms, processed]
+		return [forms, processed, crawl_count]
+	return [forms, processed, crawl_count]

@@ -2,9 +2,14 @@
 
 from __future__ import print_function
 
+import sqlite3
+import time
+
 from core.colors import end, red, white, bad, info
 
 import os
+
+from xss.reader.LogStorer import LogStorer
 
 # Just a fancy ass banner
 print('''%s
@@ -12,22 +17,24 @@ print('''%s
 %s''' % (red, white, end))
 
 try:
-    import concurrent.futures
-    from urllib.parse import urlparse
-    try:
-        import fuzzywuzzy
-    except ImportError:
-        import os
-        print ('%s fuzzywuzzy isn\'t installed, installing now.' % info)
-        ret_code = os.system('pip3 install fuzzywuzzy')
-        if(ret_code != 0):
-            print('%s fuzzywuzzy installation failed.' % bad)
-            quit()
-        print ('%s fuzzywuzzy has been installed, restart XSStrike.' % info)
-        quit()
+	import concurrent.futures
+	from urllib.parse import urlparse
+
+	try:
+		import fuzzywuzzy
+	except ImportError:
+		import os
+
+		print('%s fuzzywuzzy isn\'t installed, installing now.' % info)
+		ret_code = os.system('pip3 install fuzzywuzzy')
+		if (ret_code != 0):
+			print('%s fuzzywuzzy installation failed.' % bad)
+			quit()
+		print('%s fuzzywuzzy has been installed, restart XSStrike.' % info)
+		quit()
 except ImportError:  # throws error in python2
-    print('%s XSStrike isn\'t compatible with python2.\n Use python > 3.4 to run XSStrike.' % bad)
-    quit()
+	print('%s XSStrike isn\'t compatible with python2.\n Use python > 3.4 to run XSStrike.' % bad)
+	quit()
 
 # Let's import whatever we need from standard lib
 import sys
@@ -59,9 +66,9 @@ parser.add_argument('--json', help='treat post data as json',
 parser.add_argument('--path', help='inject payloads in the path',
                     dest='path', action='store_true')
 parser.add_argument(
-    '--seeds', help='load crawling seeds from a file', dest='args_seeds')
+	'--seeds', help='load crawling seeds from a file', dest='args_seeds')
 parser.add_argument(
-    '-f', '--file', help='load payloads from a file', dest='args_file')
+	'-f', '--file', help='load payloads from a file', dest='args_file')
 parser.add_argument('-l', '--level', help='level of crawling',
                     dest='level', type=int, default=2)
 parser.add_argument('--headers', help='add headers',
@@ -85,8 +92,9 @@ parser.add_argument('--log-file', help='Name of the file to log', dest='log_file
                     default=core.log.log_file)
 parser.add_argument('--js', '--javascript', help='render javascript', dest='js', action='store_true')
 parser.add_argument('--save-payloads', dest="payloads_file", help='Save generated payloads to a file')
-parser.add_argument('--clear-db', dest="clear_db", help="Clear generated db",  action='store_true')
+parser.add_argument('--clear-db', dest="clear_db", help="Clear generated db", action='store_true')
 parser.add_argument('--parse-timeout', dest='parse_timeout', help='timeout when parsing', type=int, default=300)
+parser.add_argument('--headless', dest='headless', help='run validation headless', default=True, action='store_true')
 args = parser.parse_args()
 
 # Pull all parameter values of dict from argparse namespace into local variables of name == key
@@ -119,6 +127,7 @@ core.log.log_file = args.log_file
 clear_db = args.clear_db
 logger = core.log.setup_logger()
 parse_timeout = args.parse_timeout
+headless = args.headless
 
 core.config.globalVariables = vars(args)
 
@@ -136,11 +145,11 @@ from modes.scan import scan
 from modes.singleFuzz import singleFuzz
 
 if type(args.add_headers) == bool:
-    headers = extractHeaders(prompt())
+	headers = extractHeaders(prompt())
 elif type(args.add_headers) == str:
-    headers = extractHeaders(args.add_headers)
+	headers = extractHeaders(args.add_headers)
 else:
-    from core.config import headers
+	from core.config import headers
 
 core.config.globalVariables['headers'] = headers
 core.config.globalVariables['checkedScripts'] = set()
@@ -148,89 +157,111 @@ core.config.globalVariables['checkedForms'] = {}
 core.config.globalVariables['definitions'] = json.loads('\n'.join(reader(sys.path[0] + '/db/definitions.json')))
 
 if clear_db:
-    os.remove('./vuln.db')
+	os.remove('./vuln.db')
 
+f = open("logfile.text", "w")
 if path:
-    paramData = converter(target, target)
+	paramData = converter(target, target)
 elif jsonData:
-    headers['Content-type'] = 'application/json'
-    paramData = converter(paramData)
+	headers['Content-type'] = 'application/json'
+	paramData = converter(paramData)
 
 target_list = []
 if targets:
-    target_list = list(filter(None, reader(targets)))
+	target_list = list(filter(None, reader(targets)))
 elif target:
-    target_list.append(target)
+	target_list.append(target)
 
 if args_file:
-    if args_file == 'default':
-        payloadList = core.config.payloads
-    else:
-        payloadList = list(filter(None, reader(args_file)))
+	if args_file == 'default':
+		payloadList = core.config.payloads
+	else:
+		payloadList = list(filter(None, reader(args_file)))
 
 seedList = []
 if args_seeds:
-    seedList = list(filter(None, reader(args_seeds)))
+	seedList = list(filter(None, reader(args_seeds)))
 
 encoding = base64 if encode and encode == 'base64' else False
 
 if not proxy:
-    core.config.proxies = {}
+	core.config.proxies = {}
 
 if update:  # if the user has supplied --update argument
-    updater()
-    quit()  # quitting because files have been changed
+	updater()
+	quit()  # quitting because files have been changed
 
 if not target_list and not args_seeds:  # if the user hasn't supplied a url
-    logger.no_format('\n' + parser.format_help().lower())
-    quit()
+	logger.no_format('\n' + parser.format_help().lower())
+	quit()
 
 if fuzz:
-    singleFuzz(target, paramData, encoding, headers, delay, timeout)
+	singleFuzz(target, paramData, encoding, headers, delay, timeout)
 elif not recursive and not args_seeds:
 
-    results = []
-    for i, target in enumerate(target_list):
-        logger.red_line()
-        logger.info(f'Target: {target}  ({i + 1}/{len(target_list)})')
-        if args_file:
-            bruteforcer(target, paramData, payloadList, encoding, headers, delay, timeout)
-        else:
-            result = scan(target, paramData, encoding, headers, delay, timeout, enableDom, skip, payloads_file)
-            results.append(result) if result else 'The target is not vulnerable!'
+	results = []
+	for i, target in enumerate(target_list):
+		logger.red_line()
+		logger.info(f'Target: {target}  ({i + 1}/{len(target_list)})')
+		if args_file:
+			bruteforcer(target, paramData, payloadList, encoding, headers, delay, timeout)
+		else:
+			result = scan(target, paramData, encoding, headers, delay, timeout, enableDom, skip, payloads_file,
+			              headless=headless)
+			results.append(result) if result else 'The target is not vulnerable!'
 
-    if results:
-        logger.yellow_summary_line()
-        logger.run('SUMMARY')
-        logger.info(f'Total        {len(target_list)} target{"s"[:len(target_list)^1]}')
-        logger.info(f'Vulnerable   {len(results)} target{"s"[:len(results)^1]}')
-        for i, result in enumerate(results):
-            logger.good(f'Pwned        {result[0]} ({result[1]})')
+	if results:
+		logger.yellow_summary_line()
+		logger.run('SUMMARY')
+		logger.info(f'Total        {len(target_list)} target{"s"[:len(target_list) ^ 1]}')
+		logger.info(f'Vulnerable   {len(results)} target{"s"[:len(results) ^ 1]}')
+		for i, result in enumerate(results):
+			logger.good(f'Pwned        {result[0]} ({result[1]})')
 
 else:
-    if target:
-        seedList.append(target)
-    for target in seedList:
-        logger.run('Crawling the target')
-        scheme = urlparse(target).scheme
-        logger.debug('Target scheme: {}'.format(scheme))
-        host = urlparse(target).netloc
-        main_url = scheme + '://' + host
-        crawlingResult = photon(target, headers, level,
-                                threadCount, delay, timeout, enableDom, parse_timeout)
-        forms = crawlingResult[0]
-        domURLs = list(crawlingResult[1])
-        difference = abs(len(domURLs) - len(forms))
-        if len(domURLs) > len(forms):
-            for i in range(difference):
-                forms.append(0)
-        elif len(forms) > len(domURLs):
-            for i in range(difference):
-                domURLs.append(0)
-        threadpool = concurrent.futures.ThreadPoolExecutor(max_workers=threadCount)
-        futures = (threadpool.submit(crawl, scheme, host, main_url, form,
-                                     blindXSS, blindPayload, headers, delay, timeout, encoding) for form, domURL in zip(forms, domURLs))
-        for i, _ in enumerate(concurrent.futures.as_completed(futures)):
-            if i + 1 == len(forms) or (i + 1) % threadCount == 0:
-                logger.info('Progress: %i/%i\r' % (i + 1, len(forms)))
-        logger.no_format('')
+
+	executiontime = time.time()
+	if target:
+		seedList.append(target)
+
+	for target in seedList:
+		logger.run('Crawling the target')
+		scheme = urlparse(target).scheme
+		logger.debug('Target scheme: {}'.format(scheme))
+		host = urlparse(target).netloc
+		main_url = scheme + '://' + host
+		crawlingResult = photon(target, headers, level,
+		                        threadCount, delay, timeout, enableDom, parse_timeout)
+
+		count = crawlingResult[2]
+		forms = crawlingResult[0]
+		domURLs = list(crawlingResult[1])
+		difference = abs(len(domURLs) - len(forms))
+		if len(domURLs) > len(forms):
+			for i in range(difference):
+				forms.append(0)
+		elif len(forms) > len(domURLs):
+			for i in range(difference):
+				domURLs.append(0)
+		threadpool = concurrent.futures.ThreadPoolExecutor(max_workers=threadCount)
+
+		futures = (threadpool.submit(crawl, scheme, host, main_url, form,
+		                             blindXSS, blindPayload, headers, delay, timeout, encoding, headless) for
+		           form, domURL in zip(forms, domURLs))
+
+		for i, _ in enumerate(concurrent.futures.as_completed(futures)):
+			if i + 1 == len(forms) or (i + 1) % threadCount == 0:
+				logger.info('Progress: %i/%i\r' % (i + 1, len(forms)))
+		logger.no_format('')
+
+	ls = LogStorer()
+	executiontime = time.time() - executiontime
+
+	if not ls.getColumn(target):
+		print("Not crawled")
+		ls.addVector('Not Crawled', target, 'none', 'none', 'none', False)
+
+	print("printing log file")
+	f = open("logfile.text", "a")
+	f.write(f"time: {executiontime}")
+	f.write(f"crawl-subpages: {count}")

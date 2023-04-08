@@ -35,11 +35,11 @@ def write_vectors(vectors, filename):
     logger.info('Written payloads to file')
 
 
-def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip, payloads_file, find=""):
+def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip, payloads_file, find="", headless=True):
     GET, POST = (False, True) if paramData else (True, False)
     # If the user hasn't supplied the root url with http(s), we will handle it
 
-    chrome = ChromeSimulator()
+    chrome = ChromeSimulator(headless = headless)
 
     if not target.startswith('http'):
         try:
@@ -56,6 +56,8 @@ def scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip, pa
     logger.debug('URL to scan: {}'.format(url))
     params = getParams(target, paramData, GET)
     logger.debug_json('Scan parameters:', params)
+
+
 
     if not params:
         logger.error('No parameters to test.')

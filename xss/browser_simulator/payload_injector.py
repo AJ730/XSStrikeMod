@@ -82,7 +82,6 @@ class PayloadInjecter(ABC):
         @rtype: boolean
         """
 		try:
-
 			self.checkBlocked(query)
 
 			self.submit_payload_by_query(query)

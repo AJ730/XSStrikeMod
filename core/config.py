@@ -16,8 +16,8 @@ proxies = {'http': 'http://0.0.0.0:8080', 'https': 'http://0.0.0.0:8080'}
 minEfficiency = 90  # payloads below this efficiency will not be displayed
 
 delay = 0  # default delay between http requests
-threadCount = 2  # default number of threads
-timeout = 1  # default number of http request timeout
+threadCount = 10  # default number of threads
+timeout = 10  # default number of http request timeout
 
 # attributes that have special properties
 specialAttributes = ['srcdoc', 'src']
@@ -93,4 +93,4 @@ blindParams = [  # common paramtere names to be bruteforced for parameter discov
     'out', 'net', 'host', 'address', 'code', 'auth', 'userid', 'auth_token', 'token', 'error', 'keyword', 'key', 'q', 'query', 'aid',
     'bid', 'cid', 'did', 'eid', 'fid', 'gid', 'hid', 'iid', 'jid', 'kid', 'lid', 'mid', 'nid', 'oid', 'pid', 'qid', 'rid', 'sid',
     'tid', 'uid', 'vid', 'wid', 'xid', 'yid', 'zid', 'cal', 'country', 'x', 'y', 'topic', 'title', 'head', 'higher', 'lower', 'width',
-    'height', 'add', 'result', 'log', 'demo', 'example', 'message']
+    'height', 'add', 'result', 'log', 'demo', 'example', 'message', 'wsquery']
