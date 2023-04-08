@@ -4,6 +4,8 @@ from __future__ import print_function
 
 from core.colors import end, red, white, bad, info
 
+import os
+
 # Just a fancy ass banner
 print('''%s
 \tXSStrike %sv4.0.0
@@ -70,8 +72,8 @@ parser.add_argument('-d', '--delay', help='delay between requests',
                     dest='delay', type=int, default=core.config.delay)
 parser.add_argument('--skip', help='don\'t ask to continue',
                     dest='skip', action='store_true')
-parser.add_argument('--skip-dom', help='skip dom checking',
-                    dest='skipDOM', action='store_true')
+parser.add_argument('--enable-dom-checking', help='skip dom checking',
+                    dest='enableDom', action='store_true')
 parser.add_argument('--blind', help='inject blind XSS payload while crawling (set the payload/s in core/config.py)',
                     dest='blindXSS', action='store_true')
 parser.add_argument('--console-log-level', help='Console logging level',
@@ -83,6 +85,8 @@ parser.add_argument('--log-file', help='Name of the file to log', dest='log_file
                     default=core.log.log_file)
 parser.add_argument('--js', '--javascript', help='render javascript', dest='js', action='store_true')
 parser.add_argument('--save-payloads', dest="payloads_file", help='Save generated payloads to a file')
+parser.add_argument('--clear-db', dest="clear_db", help="Clear generated db",  action='store_true')
+parser.add_argument('--parse-timeout', dest='parse_timeout', help='timeout when parsing', type=int, default=300)
 args = parser.parse_args()
 
 # Pull all parameter values of dict from argparse namespace into local variables of name == key
@@ -106,14 +110,15 @@ add_headers = args.add_headers
 threadCount = args.threadCount
 delay = args.delay
 skip = args.skip
-skipDOM = args.skipDOM
+enableDom = args.enableDom
 blindXSS = args.blindXSS
 payloads_file = args.payloads_file
 core.log.console_log_level = args.console_log_level
 core.log.file_log_level = args.file_log_level
 core.log.log_file = args.log_file
-
+clear_db = args.clear_db
 logger = core.log.setup_logger()
+parse_timeout = args.parse_timeout
 
 core.config.globalVariables = vars(args)
 
@@ -141,6 +146,9 @@ core.config.globalVariables['headers'] = headers
 core.config.globalVariables['checkedScripts'] = set()
 core.config.globalVariables['checkedForms'] = {}
 core.config.globalVariables['definitions'] = json.loads('\n'.join(reader(sys.path[0] + '/db/definitions.json')))
+
+if clear_db:
+    os.remove('./vuln.db')
 
 if path:
     paramData = converter(target, target)
@@ -188,7 +196,7 @@ elif not recursive and not args_seeds:
         if args_file:
             bruteforcer(target, paramData, payloadList, encoding, headers, delay, timeout)
         else:
-            result = scan(target, paramData, encoding, headers, delay, timeout, skipDOM, skip, payloads_file)
+            result = scan(target, paramData, encoding, headers, delay, timeout, enableDom, skip, payloads_file)
             results.append(result) if result else 'The target is not vulnerable!'
 
     if results:
@@ -209,7 +217,7 @@ else:
         host = urlparse(target).netloc
         main_url = scheme + '://' + host
         crawlingResult = photon(target, headers, level,
-                                threadCount, delay, timeout, skipDOM)
+                                threadCount, delay, timeout, enableDom, parse_timeout)
         forms = crawlingResult[0]
         domURLs = list(crawlingResult[1])
         difference = abs(len(domURLs) - len(forms))

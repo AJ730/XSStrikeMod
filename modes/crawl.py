@@ -21,6 +21,7 @@ logStorer = LogStorer()
 
 
 def crawl(scheme, host, main_url, form, blindXSS, blindPayload, headers, delay, timeout, encoding):
+    print('in crawl')
     chrome = ChromeSimulator()
     if form:
         for each in form.values():
@@ -63,6 +64,7 @@ def crawl(scheme, host, main_url, form, blindXSS, blindPayload, headers, delay, 
                                 for confidence, vects in vectors.items():
                                     try:
                                         vector = list(vects)[0]
+                                        print(vector)
                                         payload = f"{correct_url}?{paramName}={vector}"
                                         logVector(chrome, payload, vector, correct_url, paramName, vector, WAF)
                                         break
