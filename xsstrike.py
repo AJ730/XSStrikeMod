@@ -252,7 +252,15 @@ else:
 		                             blindXSS, blindPayload, headers, delay, timeout, encoding, headless) for
 		           form, domURL in zip(forms, domURLs))
 
-		for i, _ in enumerate(concurrent.futures.as_completed(futures)):
+		for i, future in enumerate(concurrent.futures.as_completed(futures)):
+			if future.result() == 'TimedOut':
+				logger.error('All threads Stopped for current site!')
+				threadpool.shutdown(wait=False)
+				for f in futures:
+					if not f.done():
+						f.cancel()
+				break
+
 			if i + 1 == len(forms) or (i + 1) % threadCount == 0:
 				logger.info('Progress: %i/%i\r' % (i + 1, len(forms)))
 		logger.no_format('')

@@ -87,16 +87,16 @@ def crawl(scheme, host, main_url, form, blindXSS, blindPayload, headers, delay, 
 												payload = f"{correct_url}?{paramName}={vector}"
 												logVector(chrome, payload, vector, correct_url, paramName, vector, WAF)
 												if time.time() - local_time >= 120:
-													print("Timedout for parameter")
+													logger.error("Timedout for parameter")
 													break
 
 											if time.time() -global_time  >= 600:
-												print("Timedout for site")
-												return
+												logger.error("Timedout for site")
+												return 'TimedOut'
 
 										if time.time()  - global_time>= 600:
-											print("Timedout for site")
-											return
+											logger.error("Timedout for site")
+											return 'TimedOut'
 
 									except IndexError:
 										pass
