@@ -71,25 +71,30 @@ def crawl(scheme, host, main_url, form, blindXSS, blindPayload, headers, delay, 
 								for confidence, vects in vectors.items():
 									try:
 										local_time = time.time()
+
+
 										for vector in vects:
 											efficiencies = checker(url, paramsCopy, headers, GET, delay, vector,
 											                       positions, timeout, encoding)
+
 											if not efficiencies:
 												for i in range(len(occurences)):
 													efficiencies.append(0)
 											bestEfficiency = max(efficiencies)
 											logger.info(f'current vector: {vector}')
+
 											if bestEfficiency >= 75:
 												payload = f"{correct_url}?{paramName}={vector}"
 												logVector(chrome, payload, vector, correct_url, paramName, vector, WAF)
 												if time.time() - local_time >= 120:
 													break
-												continue
 
-											if global_time - time.time() >= 600:
+											if time.time() -global_time  >= 1:
+												print("Timedout for parameter")
 												return
 
-										if global_time - time.time() >= 600:
+										if time.time()  - global_time>= 600:
+											print("Timedout for site")
 											return
 
 									except IndexError:
