@@ -30,7 +30,6 @@ def crawl(scheme, host, main_url, form, blindXSS, blindPayload, headers, delay, 
 			correct_url = main_url+ url
 			if str(main_url) in str(url):
 				correct_url = url
-
 			if url:
 				if url.startswith(main_url):
 					pass
@@ -79,8 +78,8 @@ def crawl(scheme, host, main_url, form, blindXSS, blindPayload, headers, delay, 
 												for i in range(len(occurences)):
 													efficiencies.append(0)
 											bestEfficiency = max(efficiencies)
-											logger.info(f'current vector: {vector}')
-											if bestEfficiency >= 50:
+											# logger.info(f'current vector: {vector}')
+											if bestEfficiency >= 75:
 												payload = f"{correct_url}?{paramName}={vector}"
 												logVector(chrome, payload, vector, correct_url, paramName, vector, WAF)
 												if time.time() - local_time >= 120:

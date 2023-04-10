@@ -161,7 +161,7 @@ ls = LogStorer()
 if clear_db:
 	os.remove('./vuln.db')
 
-f = open("logfile.text", "w")
+f = open("logfile.text", "a")
 if path:
 	paramData = converter(target, target)
 elif jsonData:
@@ -226,8 +226,7 @@ else:
 	if target:
 		seedList.append(target)
 
-	start = time.time()
-	count = 0
+	count = 620
 	for target in seedList:
 		logger.run('Crawling the target:'+target)
 		scheme = urlparse(target).scheme
@@ -270,21 +269,19 @@ else:
 
 
 
-		if time.time() - start >= 900:
-			print("printing log file")
-			f = open("logfile.text", "a")
-			f.write(f"time: {executiontime}")
-			f.write(f"crawl-subpages: {count}")
-			start = time.time()
+
+		logger.info("printing log file")
+		f = open("logfile.text", "a")
+		f.write(f"Target: {target}, time: {5193.155149459839 +time.time() - executiontime} crawl-subpages: {count}\n")
+		f.flush()
 
 		logger.red_line()
 
 
 	executiontime = time.time() - executiontime
 
-
-
-	print("printing log file")
+	logger.info("printing log file")
 	f = open("logfile.text", "a")
-	f.write(f"time: {executiontime}")
-	f.write(f"crawl-subpages: {count}")
+	f.write(f"time: {time.time() + 5193.155149459839  - executiontime} crawl-subpages: {count}\n")
+	f.flush()
+	f.close()

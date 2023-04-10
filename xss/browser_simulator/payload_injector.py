@@ -86,7 +86,7 @@ class PayloadInjecter(ABC):
 			return "Server Error"
 
 		if self.is_text_blocked(status.text):
-			return "Blocked"
+			return "Maybe Blocked"
 
 	def accept_cookies(self):
 		buttons = self.driver.find_elements(By.XPATH, "//button[contains(text(), 'Allow')]")  # Try Finding Cookies
