@@ -86,8 +86,11 @@ def crawl(scheme, host, main_url, form, blindXSS, blindPayload, headers, delay, 
 													break
 												continue
 
+											if global_time - time.time() >= 600:
+												return
+
 										if global_time - time.time() >= 600:
-											break
+											return
 
 									except IndexError:
 										pass
