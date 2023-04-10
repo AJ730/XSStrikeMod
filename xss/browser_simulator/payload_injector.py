@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod, ABCMeta
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from time import sleep
 
 import requests
@@ -64,14 +66,36 @@ class PayloadInjecter(ABC):
         """
 		self.driver.get(query)
 
+	def is_text_blocked(self, text):
+		if "blocked" in text:
+			return True
+		elif "blokkert" in text:
+			return True
+		return False
+
 	def checkBlocked(self, query):
-		status = requests.get(query)
+		try:
+			status = requests.get(query, timeout=5)
+		except:
+			return "Blocked"
 
 		if status.status_code == 403 or status.status_code == 405:
 			return "Blocked"
 
 		if str(status.status_code).startswith("5"):
 			return "Server Error"
+
+		if self.is_text_blocked(status.text):
+			return "Blocked"
+
+	def accept_cookies(self):
+		buttons = self.driver.find_elements(By.XPATH, "//button[contains(text(), 'Allow')]")  # Try Finding Cookies
+		buttons.extend(
+			self.driver.find_elements(By.XPATH, "//button[contains(text(), 'Accepteren')]"))  # Try Finding Cookies
+		buttons.extend(
+			self.driver.find_elements(By.XPATH, "//button[contains(text(), 'Accept')]"))  # Try Finding Cookies
+		for button in buttons:
+			button.click()
 
 	def validate_get_attack(self, query):
 		"""
@@ -81,45 +105,54 @@ class PayloadInjecter(ABC):
         @return: true or fulse
         @rtype: boolean
         """
+
 		try:
-			self.checkBlocked(query)
+			blocked = self.checkBlocked(query)
+			if blocked is not None:
+				return blocked
+
+			self.accept_cookies()
 
 			self.submit_payload_by_query(query)
-			pop_up = self.wait_for_alert()
-			if pop_up:
-				return "Succeeded"
 
-			self.checkBlocked(query)
+			blocked = self.checkBlocked(query)
+			if blocked is not None:
+				return blocked
+
+			pop_up = self.wait_for_alert()
+			if pop_up is True:
+				return "Succeeded"
+			if pop_up == "unknown response":
+				return "Unknown Response"
 
 			return "No Change"
 
 		except UnexpectedAlertPresentException:
+			return "Succeeded"
+
+		except Exception as e:
+			print(e, flush=True)
 			return "Unknown Response"
 
 	def hover_on_all_reflections(self):
-		"""
-		Some of our payloads need to hover
-		@return:
-		@rtype:
-		"""
+
 		self_injected_d3v_tags = self.driver.find_elements(By.TAG_NAME, 'd3v')
-		list_links_made = self.driver.find_elements(By.TAG_NAME, 'a')
+		list_links_made = self.driver.find_elements(By.XPATH, "//*[contains(text(), 'v3dm0s')]")
 		self_injected_details_tags = self.driver.find_elements(By.TAG_NAME, 'details')
 		action = webdriver.common.action_chains.ActionChains(self.driver)
-
-		"""
-		Navigate to 
-		"""
 
 		for i in self_injected_d3v_tags:
 			try:
 				action.move_to_element_with_offset(i, 5, 5)
 				action.perform()
 
-				if EC.alert_is_present():
-					return True
+				WebDriverWait(self.driver, 1).until(EC.alert_is_present())
+				return True
 
-			except:
+			except UnexpectedAlertPresentException:
+				return True
+
+			except Exception:
 				continue
 
 		for i in list_links_made:
@@ -127,10 +160,13 @@ class PayloadInjecter(ABC):
 				action.move_to_element_with_offset(i, 5, 5)
 				action.perform()
 
-				if EC.alert_is_present():
-					return True
+				WebDriverWait(self.driver, 1).until(EC.alert_is_present())
+				return True
 
-			except:
+			except UnexpectedAlertPresentException:
+				return True
+
+			except Exception:
 				continue
 
 		for i in self_injected_details_tags:
@@ -139,18 +175,24 @@ class PayloadInjecter(ABC):
 				action.click()
 				action.perform()
 
-				if EC.alert_is_present():
-					return True
+				WebDriverWait(self.driver, 1).until(EC.alert_is_present())
+				return True
+
+
+			except UnexpectedAlertPresentException:
+				return True
 
 			except:
 				continue
 
+		return False
+
 	def exists(self, element):
 		"""
-		Checks if an element exists in webpage
-		@return: boolean
-		@rtype: true or false
-		"""
+        Checks if an element exists in webpage
+        @return: boolean
+        @rtype: true or false
+        """
 
 		try:
 			self.driver.find_element(By.XPATH, element).is_displayed()
@@ -168,6 +210,6 @@ class PayloadInjecter(ABC):
 		try:
 			if self.hover_on_all_reflections():
 				return True
-
-		except TimeoutException:
 			return False
+		except Exception as e:
+			return "unknown response"

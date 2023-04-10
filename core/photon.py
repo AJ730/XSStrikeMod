@@ -26,7 +26,6 @@ def photon(seedUrl, headers, level, threadCount, delay, timeout, enableDom, pars
 	global crawl_count
 	crawl_count = 0
 
-	@SetTimeoutDecorator(timeout=parse_timeout)
 	def rec(target):
 		processed.add(target)
 		printableTarget = '/'.join(target.split('/')[3:])

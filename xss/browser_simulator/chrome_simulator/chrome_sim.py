@@ -19,6 +19,8 @@ class ChromeSimulator(PayloadInjecter):
 		chrome_options.add_argument("ignore-certificate-error")
 		chrome_options.add_argument("ignore-ssl-errors")
 		chrome_options.headless = headless
+		chrome_options.add_experimental_option('prefs', {'profile.default_content_setting_values.cookies': 2})
+		chrome_options.add_argument("--lang=en-GB")
 
 
 		caps = webdriver.DesiredCapabilities().CHROME

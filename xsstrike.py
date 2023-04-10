@@ -5,6 +5,8 @@ from __future__ import print_function
 import sqlite3
 import time
 
+import requests
+
 from core.colors import end, red, white, bad, info
 
 import os
@@ -155,7 +157,7 @@ core.config.globalVariables['headers'] = headers
 core.config.globalVariables['checkedScripts'] = set()
 core.config.globalVariables['checkedForms'] = {}
 core.config.globalVariables['definitions'] = json.loads('\n'.join(reader(sys.path[0] + '/db/definitions.json')))
-
+ls = LogStorer()
 if clear_db:
 	os.remove('./vuln.db')
 
@@ -224,8 +226,10 @@ else:
 	if target:
 		seedList.append(target)
 
+	start = time.time()
+	count = 0
 	for target in seedList:
-		logger.run('Crawling the target')
+		logger.run('Crawling the target:'+target)
 		scheme = urlparse(target).scheme
 		logger.debug('Target scheme: {}'.format(scheme))
 		host = urlparse(target).netloc
@@ -233,7 +237,7 @@ else:
 		crawlingResult = photon(target, headers, level,
 		                        threadCount, delay, timeout, enableDom, parse_timeout)
 
-		count = crawlingResult[2]
+		count += crawlingResult[2]
 		forms = crawlingResult[0]
 		domURLs = list(crawlingResult[1])
 		difference = abs(len(domURLs) - len(forms))
@@ -254,12 +258,31 @@ else:
 				logger.info('Progress: %i/%i\r' % (i + 1, len(forms)))
 		logger.no_format('')
 
-	ls = LogStorer()
+
+		if not ls.getColumn(target):
+			try:
+				status = requests.get(target, timeout=5)
+				print("Not Crawled", flush=True)
+				ls.addVector('Not Crawled', target, 'none', 'none', 'none', False)
+			except:
+				ls.addVector('Banned', target, 'none', 'none', 'none', False)
+				print("Banned", flush=True)
+
+
+
+		if time.time() - start >= 900:
+			print("printing log file")
+			f = open("logfile.text", "a")
+			f.write(f"time: {executiontime}")
+			f.write(f"crawl-subpages: {count}")
+			start = time.time()
+
+		logger.red_line()
+
+
 	executiontime = time.time() - executiontime
 
-	if not ls.getColumn(target):
-		print("Not crawled")
-		ls.addVector('Not Crawled', target, 'none', 'none', 'none', False)
+
 
 	print("printing log file")
 	f = open("logfile.text", "a")
