@@ -78,7 +78,7 @@ def crawl(scheme, host, main_url, form, blindXSS, blindPayload, headers, delay, 
 												for i in range(len(occurences)):
 													efficiencies.append(0)
 											bestEfficiency = max(efficiencies)
-											# logger.info(f'current vector: {vector}')
+											logger.info(f'current vector: {vector}')
 											if bestEfficiency >= 75:
 												payload = f"{correct_url}?{paramName}={vector}"
 												logVector(chrome, payload, vector, correct_url, paramName, vector, WAF)
