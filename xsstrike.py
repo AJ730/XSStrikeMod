@@ -226,7 +226,7 @@ else:
 	if target:
 		seedList.append(target)
 
-	count = 1698
+	count = 2020
 	for target in seedList:
 		logger.run('Crawling the target:'+target)
 		scheme = urlparse(target).scheme
@@ -272,7 +272,7 @@ else:
 
 		logger.info("printing log file")
 		f = open("logfile.text", "a")
-		f.write(f"Target: {target}, time: {11889.311007499695  +time.time() - executiontime} crawl-subpages: {count}\n")
+		f.write(f"Target: {target}, time: {13522.887819766998  +time.time() - executiontime} crawl-subpages: {count}\n")
 		f.flush()
 
 		logger.red_line()
@@ -282,6 +282,6 @@ else:
 
 	logger.info("printing log file")
 	f = open("logfile.text", "a")
-	f.write(f"time: {time.time() + 11889.311007499695 - executiontime} crawl-subpages: {count}\n")
+	f.write(f"time: {time.time() + 13522.887819766998- executiontime} crawl-subpages: {count}\n")
 	f.flush()
 	f.close()
