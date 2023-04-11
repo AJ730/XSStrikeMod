@@ -86,6 +86,11 @@ def crawl(scheme, host, main_url, form, blindXSS, blindPayload, headers, delay, 
 											if bestEfficiency >= 75:
 												payload = f"{correct_url}?{paramName}={vector}"
 												logVector(chrome, payload, vector, correct_url, paramName, vector, WAF)
+
+												if time.time() - global_time >= 600:
+													logger.error("Timedout for site")
+													return
+
 												if time.time() - local_time >= 120:
 													logger.error("Timedout for parameter")
 													break
