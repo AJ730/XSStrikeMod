@@ -226,7 +226,7 @@ else:
 	if target:
 		seedList.append(target)
 
-	count = 0
+	count = 1061
 	for target in seedList:
 		logger.run('Crawling the target:'+target)
 		scheme = urlparse(target).scheme
@@ -253,14 +253,6 @@ else:
 		           form, domURL in zip(forms, domURLs))
 
 		for i, future in enumerate(concurrent.futures.as_completed(futures)):
-			if future.result() == 'TimedOut':
-				logger.error('All threads Stopped for current site!')
-				threadpool.shutdown(wait=False)
-				for f in futures:
-					if not f.done():
-						f.cancel()
-				break
-
 			if i + 1 == len(forms) or (i + 1) % threadCount == 0:
 				logger.info('Progress: %i/%i\r' % (i + 1, len(forms)))
 		logger.no_format('')
@@ -280,7 +272,7 @@ else:
 
 		logger.info("printing log file")
 		f = open("logfile.text", "a")
-		f.write(f"Target: {target}, time: { +time.time() - executiontime} crawl-subpages: {count}\n")
+		f.write(f"Target: {target}, time: { +time.time() +6704.2694454193115  - executiontime} crawl-subpages: {count}\n")
 		f.flush()
 
 		logger.red_line()
@@ -290,6 +282,6 @@ else:
 
 	logger.info("printing log file")
 	f = open("logfile.text", "a")
-	f.write(f"time: {time.time() + - executiontime} crawl-subpages: {count}\n")
+	f.write(f"time: {time.time() +6704.2694454193115  - executiontime} crawl-subpages: {count}\n")
 	f.flush()
 	f.close()

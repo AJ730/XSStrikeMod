@@ -92,11 +92,11 @@ def crawl(scheme, host, main_url, form, blindXSS, blindPayload, headers, delay, 
 
 											if time.time() -global_time  >= 600:
 												logger.error("Timedout for site")
-												return 'TimedOut'
+												return
 
 										if time.time()  - global_time>= 600:
 											logger.error("Timedout for site")
-											return 'TimedOut'
+											return
 
 									except IndexError:
 										pass
