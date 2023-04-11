@@ -93,4 +93,4 @@ blindParams = [  # common paramtere names to be bruteforced for parameter discov
     'out', 'net', 'host', 'address', 'code', 'auth', 'userid', 'auth_token', 'token', 'error', 'keyword', 'key', 'q', 'query', 'aid',
     'bid', 'cid', 'did', 'eid', 'fid', 'gid', 'hid', 'iid', 'jid', 'kid', 'lid', 'mid', 'nid', 'oid', 'pid', 'qid', 'rid', 'sid',
     'tid', 'uid', 'vid', 'wid', 'xid', 'yid', 'zid', 'cal', 'country', 'x', 'y', 'topic', 'title', 'head', 'higher', 'lower', 'width',
-    'height', 'add', 'result', 'log', 'demo', 'example', 'message']
+    'height', 'add', 'result', 'log', 'demo', 'example', 'message', 'wsquery']
