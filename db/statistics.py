@@ -3,6 +3,7 @@ import sqlite3
 import matplotlib.pyplot as plt
 import numpy as np
 import warnings
+import seaborn as sns
 
 warnings.filterwarnings("ignore")
 
@@ -75,11 +76,13 @@ c.execute("SELECT Distinct WAF FROM 'vulnerability'")
 waflist = list(map(lambda x: x[0], c.fetchall()))
 print("All different WAF: " + str(waflist))
 
-c.execute("SELECT WAF, COUNT(*) FROM (SELECT DISTINCT webpage, WAF FROM 'vulnerability' WHERE WAF IS NOT 'False') GROUP BY WAF")
-waflistcount = c.fetchall()
+######################## PIE CHART ########################
+c.execute(
+    "SELECT WAF, COUNT(*) FROM (SELECT DISTINCT webpage, WAF FROM 'vulnerability' WHERE WAF IS NOT 'False') GROUP BY WAF")
+
+waflistcount = sorted(c.fetchall(), key=lambda kv: kv[1], reverse=True)
 print("Amount of occurances for each WAF: ", waflistcount)
 
-waflistcount = sorted(waflistcount, key=lambda kv: kv[1], reverse=True)
 noneCount = ("No WAF", waflistcount[0][1])
 otherCount = ("WAF", sum(j for i, j in waflistcount[1:]))
 
@@ -92,22 +95,50 @@ plt.title("Percentage of crawled websites with or without WAF")
 plt.legend(wafs)
 plt.autoscale()
 plt.show()
+########################################################################
 
-c.execute("SELECT WAF, COUNT(*) FROM (SELECT DISTINCT webpage, WAF FROM 'vulnerability' WHERE WAF IS NOT 'None' AND WAF IS NOT 'False') GROUP BY WAF")
+######################## PIE CHART ########################
+c.execute(
+    "SELECT WAF, COUNT(*) FROM (SELECT webpage, WAF, status FROM 'vulnerability' WHERE status='Blocked') GROUP BY status, WAF")
+
+waflistcount = sorted(c.fetchall(), key=lambda kv: kv[1], reverse=True)
+print("Amount of occurances for each WAF: ", waflistcount)
+
+noneCount = ("No WAF", waflistcount[0][1])
+otherCount = ("WAF", sum(j for i, j in waflistcount[1:]))
+
+waflistcount = [noneCount, otherCount]
+
+wafs, wafcounts = zip(*waflistcount)
+indices = np.arange(len(waflistcount))
+plt.pie(wafcounts, startangle=90, autopct='%1.00f%%')
+plt.title("Percentage of crawled websites with / without WAF where we were blocked")
+plt.legend(wafs)
+plt.autoscale()
+plt.show()
+########################################################################
+
+######################## WAF TYPES ########################
+c.execute(
+    "SELECT WAF, COUNT(*) FROM (SELECT DISTINCT webpage, WAF FROM 'vulnerability' WHERE WAF IS NOT 'None' AND WAF IS NOT 'False') GROUP BY WAF")
 waflistcount = c.fetchall()
 print("Amount of occurances for each WAF (excluding None/False): ", waflistcount)
 
 waflistcount = sorted(waflistcount, key=lambda kv: kv[1], reverse=False)
 
+otherCount = ("other", sum(j for i, j in waflistcount[:6]))
+waflistcount = [otherCount] + waflistcount[6:]
 wafs, wafcounts = zip(*waflistcount)
 indices = np.arange(len(waflistcount))
+
+plt.figure(figsize=(8, 10))
 plt.bar(indices, wafcounts)
 plt.xticks(indices, wafs, rotation='vertical')
-plt.title("WAF occurances per distinct webpage (excluding None/False)")
-plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.7)
-plt.autoscale()
+plt.title("Amount of occurances for each WAF (excluding None/False)")
+plt.subplots_adjust(top=0.9, bottom=0.45)
+# plt.autoscale()
 plt.show()
-
+########################################################################
 
 c.execute("SELECT Distinct WAF FROM 'vulnerability' WHERE status='Banned'")
 distinctWafsBanned = list(map(lambda x: x[0], c.fetchall()))
@@ -163,8 +194,8 @@ print("the total amount of entries in the DB with is: ", totalCount)
 
 c.execute("SELECT COUNT(DISTINCT webpage) FROM 'vulnerability' WHERE WAF is not 'None' and WAF is not 'False' ")
 distinctCountWithWaf = int(c.fetchone()[0])
-print("the percentage of webpages with WAF that we detected is:" + str(distinctCountWithWaf / distinctCount * 100) + "%")
-
+print(
+    "the percentage of webpages with WAF that we detected is:" + str(distinctCountWithWaf / distinctCount * 100) + "%")
 
 c.execute("SELECT webpage, COUNT(*) FROM 'vulnerability' GROUP BY webpage")
 distinctCountWithWaf = c.fetchall()
@@ -179,19 +210,39 @@ for record in distinctCountWithWaf:
         countDict[res] += record[1]
 
 countList = sorted(countDict.items(), key=lambda kv: kv[1], reverse=False)
-x, y = zip(*countList)
-plt.plot(np.log(y))
-plt.title("Amount of entries in DB / website")
-plt.ylabel("log() of amount of packets")
-plt.xlabel("websites")
+countList1 = [y for x, y in countList if y <= 1]
+countList2 = [y for x, y in countList if 1 < y <= 10]
+countList3 = [y for x, y in countList if 10 < y <= 50]
+countList4 = [y for x, y in countList if y > 50]
+x = ["0-1", "2-10", "10-50", "50+"]
+y = [len(countList1), len(countList2), len(countList3), len(countList4)]
+
+plt.bar(x,y, label=y)
+for i in range(len(y)):
+    plt.text(i, y[i], y[i], ha='center')
+plt.title("Number of payloads / website")
+plt.ylabel("Number of websites")
+plt.xlabel("Number of payloads")
 plt.show()
 
-
 c.execute("SELECT status, COUNT(webpage)  FROM (SELECT Distinct webpage, status FROM 'vulnerability' ) GROUP BY status")
-countsOfStatusses = sorted(list(map(lambda x: (x[0], x[1]), c.fetchall())), key=lambda x:x[1], reverse=True)
-plt.title("'Average' action / website")
+countsOfStatusses = sorted(list(map(lambda x: (x[0], x[1]), c.fetchall())), key=lambda x: x[1], reverse=True)
+plt.title("'Average' status / website")
 statusses, counts = zip(*countsOfStatusses)
 plt.bar(statusses, counts)
+for i in range(len(counts)):
+    plt.text(i, counts[i], counts[i], ha='center')
+plt.xticks(rotation=90)
+plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.35)
+plt.show()
+
+c.execute("SELECT status, COUNT(webpage)  FROM (SELECT webpage, status FROM 'vulnerability' ) GROUP BY status")
+countsOfStatusses = sorted(list(map(lambda x: (x[0], x[1]), c.fetchall())), key=lambda x: x[1], reverse=True)
+plt.title("Status / XSS attempt")
+statusses, counts = zip(*countsOfStatusses)
+plt.bar(statusses, counts)
+for i in range(len(counts)):
+    plt.text(i, counts[i], counts[i], ha='center')
 plt.xticks(rotation=90)
 plt.subplots_adjust(left=0.1, right=0.9, top=0.9, bottom=0.35)
 plt.show()
