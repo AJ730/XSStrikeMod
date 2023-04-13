@@ -145,3 +145,33 @@ print("the total amount of entries in the DB with is: ", totalCount)
 c.execute("SELECT COUNT(DISTINCT webpage) FROM 'vulnerability' WHERE WAF is not 'None' and WAF is not 'False' ")
 distinctCountWithWaf = int(c.fetchone()[0])
 print("the percentage of webpages with WAF that we detected is:" + str(distinctCountWithWaf / distinctCount * 100) + "%")
+
+
+c.execute("SELECT webpage, COUNT(*) FROM 'vulnerability'  GROUP BY webpage")
+distinctCountWithWaf = c.fetchall()
+
+countDict = {}
+
+for record in distinctCountWithWaf:
+    res = (re.match(r"(https:\/\/*[^\/|\n|$]*)", record[0])).group(1)
+    if res not in countDict:
+        countDict[res] = record[1]
+    else:
+        countDict[res] += record[1]
+
+countList = sorted(countDict.items(), key=lambda kv: kv[1], reverse=False)
+x, y = zip(*countList)
+plt.plot(np.log(y))
+plt.title("Amount of entries in DB / webpage")
+plt.ylabel("log() of amount of packets")
+plt.xlabel("webpages")
+plt.show()
+
+
+c.execute("SELECT status, COUNT(webpage)  FROM (SELECT Distinct webpage, status FROM 'vulnerability' ) GROUP BY status")
+countsOfStatusses = sorted(list(map(lambda x: (x[0], x[1]), c.fetchall())), key=lambda x:x[1], reverse=True)
+plt.title("'Average' action / website")
+statusses, counts = zip(*countsOfStatusses)
+plt.bar(statusses, counts)
+plt.xticks(rotation=15)
+plt.show()
