@@ -96,7 +96,7 @@ parser.add_argument('--js', '--javascript', help='render javascript', dest='js',
 parser.add_argument('--save-payloads', dest="payloads_file", help='Save generated payloads to a file')
 parser.add_argument('--clear-db', dest="clear_db", help="Clear generated db", action='store_true')
 parser.add_argument('--parse-timeout', dest='parse_timeout', help='timeout when parsing', type=int, default=300)
-parser.add_argument('--headless', dest='headless', help='run validation headless', default=True, action='store_true')
+parser.add_argument('--with-head', dest='headless', help='run validation headless', default=True , action='store_false')
 args = parser.parse_args()
 
 # Pull all parameter values of dict from argparse namespace into local variables of name == key
